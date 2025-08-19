@@ -14,8 +14,8 @@ from aiogram.types import BufferedInputFile
 from dotenv import load_dotenv
 
 # ================== Завантаження .env ==================
-# Вказуємо повний шлях до файлу .env на PythonAnywhere
-load_dotenv("/home/oldiezy/Provisional_Mail/.env")  
+# Вказуємо точний шлях і гарантуємо перевизначення змінних
+load_dotenv(dotenv_path="/home/oldiezy/Provisional_Mail/.env", override=True)
 
 API_TOKEN = os.getenv("BOT_TOKEN")
 print("DEBUG: BOT_TOKEN =", API_TOKEN)  # Перевірка, щоб переконатися, що токен читається
@@ -108,7 +108,6 @@ async def start_cmd(message: types.Message):
         parse_mode="Markdown"
     )
 
-    # Якщо новий користувач — показати changelog
     if message.from_user.id not in new_users:
         new_users.add(message.from_user.id)
         changelog = (
@@ -247,43 +246,29 @@ async def show_full(callback: types.CallbackQuery):
 async def show_attachments(callback: types.CallbackQuery):
     mail_id = callback.data.split(":")[1]
     key = (callback.from_user.id, mail_id)
-    account = user_accounts.get(callback.from_user.id)
+    attachments = stored_attachments.get(key, [])
 
-    if not account or key not in stored_attachments:
-        await callback.message.answer("⚠️ Вкладення недоступні.")
+    if not attachments:
+        await callback.message.answer("📎 Вкладень немає.")
         await callback.answer()
         return
 
-    attachments = stored_attachments[key]
-
     for att in attachments:
-        try:
-            url = f"{BASE_URL}/messages/{mail_id}/attachments/{att['id']}"
-            headers = {"Authorization": f"Bearer {account['token']}"}
-            file_resp = requests.get(url, headers=headers)
-
-            filename = att.get("filename") or "attachment"
-            content_type = (att.get("mimeType") or att.get("contentType") or "").lower()
-            data = file_resp.content
-            input_file = BufferedInputFile(data, filename=filename)
-
-            if content_type.startswith("image/"):
-                await bot.send_photo(callback.from_user.id, input_file, caption="🖼 Вкладене зображення")
-            elif content_type.startswith("video/"):
-                await bot.send_video(callback.from_user.id, input_file, caption="🎥 Вкладене відео")
-            else:
-                await bot.send_document(callback.from_user.id, input_file)
-
-        except Exception as e:
-            logging.error(f"❌ Помилка при завантаженні вкладення: {e}")
-            await callback.message.answer(f"⚠️ Не вдалося надіслати один із файлів: {e}")
-
+        fname = att.get("filename", "file")
+        f_url = att.get("url")
+        if f_url:
+            r = requests.get(f_url)
+            f = BufferedInputFile(io.BytesIO(r.content), filename=fname)
+            await callback.message.answer_document(f)
     await callback.answer()
 
 
+# ================== Запуск бота ==================
 async def main():
-    asyncio.create_task(check_new_mails())
-    await dp.start_polling(bot)
+    # Паралельно polling та перевірка нових листів
+    task1 = asyncio.create_task(dp.start_polling(bot))
+    task2 = asyncio.create_task(check_new_mails())
+    await asyncio.gather(task1, task2)
 
 
 if __name__ == "__main__":
