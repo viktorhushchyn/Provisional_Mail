@@ -11,6 +11,7 @@ from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.types import BufferedInputFile
+from dotenv import load_dotenv
 
 API_TOKEN = os.getenv("BOT_TOKEN")
 
