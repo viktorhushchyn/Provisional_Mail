@@ -13,6 +13,8 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.types import BufferedInputFile
 from dotenv import load_dotenv
 
+load_dotenv()
+
 API_TOKEN = os.getenv("BOT_TOKEN")
 
 logging.basicConfig(level=logging.INFO)
