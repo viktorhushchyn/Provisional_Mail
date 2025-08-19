@@ -13,9 +13,12 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.types import BufferedInputFile
 from dotenv import load_dotenv
 
-load_dotenv()
+# ================== Завантаження .env ==================
+# Вказуємо повний шлях до файлу .env на PythonAnywhere
+load_dotenv("/home/oldiezy/Provisional_Mail/.env")  
 
 API_TOKEN = os.getenv("BOT_TOKEN")
+print("DEBUG: BOT_TOKEN =", API_TOKEN)  # Перевірка, щоб переконатися, що токен читається
 
 logging.basicConfig(level=logging.INFO)
 
@@ -30,7 +33,6 @@ stored_attachments = {}   # (user_id, mail_id) -> [attachments]
 new_users = set()         # для відстеження нових користувачів
 
 BASE_URL = "https://api.mail.tm"
-
 
 # ================== Допоміжні функції ==================
 def gen_password(length=12):
